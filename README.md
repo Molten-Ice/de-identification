@@ -1,10 +1,10 @@
-# de-identification
+# De-identification
 
 The goal of this code is to take an input image, containing one or several individuals, and anonymize all faces present.
 
 ## Table of Contents
-Version 2: [ Pre-trained GAN](#pretrained-gan)
-Version 1: [ DCGAN (end-to-end)](#dcgan)
+- Version 2: [ Pre-trained GAN](#pretrained-gan)
+- Version 1: [ DCGAN (end-to-end)](#dcgan)
 
 ## Pretrained GAN
 
