@@ -10,6 +10,9 @@ The goal of this code is to take an input image, containing one or several indiv
 
 Here a pretrained GAN will be used and aligned with the image
 
+First generation from new architecture
+![old-man-generated](dev-notebooks/media/old-man-generated.png)
+
 ## DCGAN
 
 *Last visited 23/04/2023*
