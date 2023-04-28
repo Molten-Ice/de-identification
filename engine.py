@@ -242,12 +242,12 @@ def generate_align_rotated_faces(mtcnn, original_img, raw_boxes, raw_landmarks, 
         cropped_faces.append([cropped_face, box, rotated_box, rotated_img, rotate_angle, face_centre])
     return cropped_faces
 
-def generate_training_image(mtcnn, G, cropped_faces, face_traits, border_factor, device):
+def generate_training_image(mtcnn, G, cropped_faces, face_traits, border_factor, device, samples_wanted = 1):
     indexes = []
     training_images = []
     for real_face_array, traits in zip(cropped_faces, face_traits):
         real_face = real_face_array[0]
-        best_zs_for_face = find_best_zs(mtcnn, G, traits, device, max_iterations = 50, samples_wanted = 1)
+        best_zs_for_face = find_best_zs(mtcnn, G, traits, device, max_iterations = 50, samples_wanted = samples_wanted)
         training_images_for_face = create_training_masks_targets(G, best_zs_for_face, real_face, device, border_factor = border_factor)
         indexes.append([len(training_images), len(training_images)+len(training_images_for_face)])
         training_images.extend(training_images_for_face)
