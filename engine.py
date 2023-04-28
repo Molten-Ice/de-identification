@@ -13,9 +13,6 @@ from deepface import DeepFace
 from facenet_pytorch import MTCNN
 import torchvision.transforms as transforms
 
-device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-assert device.type == "cuda", "Error, not running on gpu!"
-
 import sys
 # caution: path[0] is reserved for script path (or '' in REPL)
 sys.path.insert(1, '/content/stylegan2-ada-pytorch')
@@ -117,7 +114,7 @@ def find_best_zs(mtcnn, G, real_traits, device, max_iterations = 50, samples_wan
     # print(f"[{len(best_zs)}/{samples_wanted}] generated in {i} iterations")
     return best_zs
 
-def create_training_masks_targets(best_zs, real_face, device, border_factor = 0.15):
+def create_training_masks_targets(G, best_zs, real_face, device, border_factor = 0.15):
     tensor_transform = transforms.ToTensor()
     training_images = []
     for _, z, box in best_zs: 
@@ -256,7 +253,7 @@ def generate_training_image(mtcnn, G, cropped_faces, face_traits, border_factor,
     for real_face_array, traits in zip(cropped_faces, face_traits):
         real_face = real_face_array[0]
         best_zs_for_face = find_best_zs(mtcnn, G, traits, device, max_iterations = 50, samples_wanted = 1)
-        training_images_for_face = create_training_masks_targets(best_zs_for_face, real_face, device, border_factor = border_factor)
+        training_images_for_face = create_training_masks_targets(G, best_zs_for_face, real_face, device, border_factor = border_factor)
         indexes.append([len(training_images), len(training_images)+len(training_images_for_face)])
         training_images.extend(training_images_for_face)
     return training_images, indexes
