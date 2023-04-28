@@ -150,6 +150,8 @@ def train_loop(G, D, training_images, track_progress = 50, eval_interval = 50,  
     """
     zs = [array[0] for array in training_images]
     fixed_noise = torch.cat(zs, dim=0).clone().requires_grad_(True) #512 input latent vector
+    real_face_tensor_stack = torch.cat([array[2] for array in training_images],dim=0)
+    mask_stack = torch.cat([array[3] for array in training_images],dim=0)
 
     lr = 0.003
     lam = 0.0005 # perceptual_loss factor
@@ -164,13 +166,7 @@ def train_loop(G, D, training_images, track_progress = 50, eval_interval = 50,  
     for i in range(iterations):
         fake_faces = G(fixed_noise, None)
         perceptual_loss = torch.sum(D(fake_faces, None).view(-1))# unbounded, the more negative, the more confident D is that it's real
-        
-        contextual_losses = []
-        for face_idx, (_, _, real_face_tensor, mask, _) in enumerate(training_images):
-            fake_face = fake_faces[face_idx].unsqueeze(dim=0)
-            contextual_loss_singular = nn.functional.l1_loss(real_face_tensor*mask, fake_face*mask)
-            contextual_losses.append(contextual_loss_singular)
-        contextual_loss = sum(contextual_losses)
+        contextual_loss = nn.functional.l1_loss(real_face_tensor_stack*mask_stack, fake_faces*mask_stack)*len(training_images)
         
         complete_loss = contextual_loss + lam*perceptual_loss
 
@@ -186,7 +182,6 @@ def train_loop(G, D, training_images, track_progress = 50, eval_interval = 50,  
 
     print(f"Generation finished for {len(training_images)} in {time.time()-t_start:.2f} seconds")
     return fake_faces, fixed_noise, progress
-
 
 def calculate_rotate_angle(left_eye, right_eye):
 
