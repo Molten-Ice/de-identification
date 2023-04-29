@@ -10,6 +10,9 @@ The goal of this code is to take an input image, containing one or several indiv
 
 Here a pretrained GAN will be used and aligned with the image
 
+First model from end-to-end system
+![example1](media/example1.png)
+
 First generation from new architecture
 ![old-man-generated](dev-notebooks/media/old-man-generated.png)
 
