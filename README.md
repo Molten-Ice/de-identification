@@ -73,7 +73,7 @@ The Synthesized faces are placed with a group image. This can involve using imag
 
 ![example-masking](dev-notebooks/media/example-masking.png)
 
-
+<img src="[https://github.com/favicon.ico](https://github.com/Molten-Ice/de-identification/tree/main/dev-notebooks/media/example-masking.png)" width="48">
 
 
 
