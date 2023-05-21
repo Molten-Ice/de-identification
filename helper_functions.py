@@ -122,7 +122,7 @@ def tensor_to_np(img):
     torch_grid = torchvision.utils.make_grid(img.cpu(), normalize = True, padding = 0)
     return np.ascontiguousarray((torch_grid.permute(1,2,0).numpy()*255), dtype=np.uint8)
 
-def inpaint(G, D, mtcnn, device, cropped_face, fixed_noise, lr = 0.0003, iterations = 1500, lam = 0.1, eval_interval = 200, display_intermediate = False):
+def inpaint(G, D, mtcnn, device, cropped_face, fixed_noise, lr = 0.0003, iterations = 1500, lam = 0.1, eval_interval = 200, display_intermediate = False,  border_factor = 0.15):
 
     ## Generate image             
     generated_img_tensor = G(fixed_noise, None)  # NCHW, float32, dynamic range [-1, +1], None is class labels
