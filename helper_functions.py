@@ -1,4 +1,3 @@
-
 ## Imports ##
 import os
 import cv2
@@ -122,8 +121,7 @@ def tensor_to_np(img):
     torch_grid = torchvision.utils.make_grid(img.cpu(), normalize = True, padding = 0)
     return np.ascontiguousarray((torch_grid.permute(1,2,0).numpy()*255), dtype=np.uint8)
 
-def inpaint(G, D, mtcnn, device, cropped_face, fixed_noise, lr = 0.0003, iterations = 1500, lam = 0.1, eval_interval = 200, display_intermediate = False,  border_factor = 0.15):
-
+def generate_inpainting_inputs(G, D, mtcnn, device, cropped_face, fixed_noise, border_factor = 0.15):
     ## Generate image             
     generated_img_tensor = G(fixed_noise, None)  # NCHW, float32, dynamic range [-1, +1], None is class labels
     generated_img = tensor_to_np(generated_img_tensor)
@@ -139,7 +137,6 @@ def inpaint(G, D, mtcnn, device, cropped_face, fixed_noise, lr = 0.0003, iterati
     height = y2 - y1
     print(f"width: {width}, height: {height}")
 
-    border_factor = 0.15
     tensor_transform = transforms.ToTensor()
 
     border_width = int(width*border_factor)
@@ -153,25 +150,21 @@ def inpaint(G, D, mtcnn, device, cropped_face, fixed_noise, lr = 0.0003, iterati
     cropped_real_face_tensor = torch.zeros((1, 3, 1024, 1024)).to(device)
     cropped_real_face_tensor[:, :, y1:y2, x1:x2] = tensor_transform(resized_face).unsqueeze(dim=0).to(device)
 
-    if display_intermediate:
-        images_to_concat = []
-        for image in [cropped_real_face_tensor, generated_img_tensor, mask,mask*cropped_real_face_tensor, mask*generated_img_tensor, cropped_real_face_tensor*mask+generated_img_tensor*(1-mask)]:
-            images_to_concat.append(tensor_to_np(image))
-        display_img = np.concatenate(images_to_concat,axis=1)
-        display(ImageOps.contain(Image.fromarray(display_img), (1500, 1500)))
+    generated_face = generated_img[y1:y2, x1:x2]
+    resized_face = cv2.resize(generated_face, (cropped_face.shape[1], cropped_face.shape[0]))
+    border_width = int(resized_face.shape[1]*border_factor)
+    border_height = int(resized_face.shape[0]*border_factor)
+    resized_face = resized_face[border_height:-border_height, border_width:-border_width]
+
+    return cropped_real_face_tensor, mask, box_generated, resized_face
+    
+def inpaint(G, D, mtcnn, device, cropped_face, fixed_noise, cropped_real_face_tensor, mask, box_generated, lr = 0.0003, iterations = 1500, lam = 0.1, eval_interval = 200,  border_factor = 0.15):
 
     ## Train ##
     progress = train(G, D, fixed_noise, cropped_real_face_tensor, mask, lr = lr, iterations = iterations, lam = lam, eval_interval = eval_interval)
 
-    if display_intermediate:
-        images_to_concat = []
-        for image in [cropped_real_face_tensor, mask, progress[-1]]:
-            images_to_concat.append(tensor_to_np(image))
-        display_img = np.concatenate(images_to_concat,axis=1)
-        display(ImageOps.contain(Image.fromarray(display_img), (1500, 1500)))
-
-    
     inpainted_faces = []
+    x1, y1, x2, y2 = box_generated
     for inpainted_face in progress:
         inpainted_face = tensor_to_np(inpainted_face[:, :, y1:y2, x1:x2])
         inpainted_face = cv2.resize(inpainted_face, (cropped_face.shape[1], cropped_face.shape[0]))
