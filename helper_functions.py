@@ -174,3 +174,72 @@ def inpaint(G, D, mtcnn, device, cropped_face, fixed_noise, cropped_real_face_te
         inpainted_face = inpainted_face[border_height:-border_height, border_width:-border_width]
         inpainted_faces.append(inpainted_face)
     return inpainted_faces
+
+def visualize_progress(original_img_padded, box, left_eye, right_eye, rotate_angle, rotated_img, rotated_box, inpainted_faces):
+    #1. Draw original face box on
+    annotated_faces_img = original_img_padded.copy()
+    cv2.rectangle(annotated_faces_img, box[:2], box[2:], (255, 0, 0), 2)
+    save_image(annotated_faces_img, pad_width)
+
+    #2. Drawing eyes
+    left_eye, right_eye = landmark[0], landmark[1]
+    cv2.circle(annotated_faces_img, left_eye, 3, (0,255,255), -1)
+    save_image(annotated_faces_img, pad_width)
+    cv2.circle(annotated_faces_img, right_eye, 3, (0,255,255), -1)
+    save_image(annotated_faces_img, pad_width)
+
+    #3. Creating and drawing 3rd point to create triangle
+    if left_eye[1] > right_eye[1]: # right eye higher than left eye
+        third_point = (right_eye[0], left_eye[1]) # rotating clockwise
+    else:
+        third_point = (left_eye[0], right_eye[1]) # rotating counter-clockwise
+    cv2.circle(annotated_faces_img, third_point, 3, (0,255,255), -1)
+    save_image(annotated_faces_img, pad_width)
+
+    #4. Drawing triangle
+    for pair in [[left_eye, right_eye], [left_eye, third_point], [right_eye, third_point]]:
+        cv2.line(annotated_faces_img, pair[0], pair[1], (0,255,0), 1)
+    save_image(annotated_faces_img, pad_width)
+
+    #5. Rotating image, writing angle on it
+    rotated_img_annotated = np.array(Image.fromarray(annotated_faces_img).rotate(rotate_angle, center=face_centre, expand=False))
+    cv2.putText(rotated_img_annotated, f"Rotating by {rotate_angle:.2f}° anti-clockwise", (pad_width+10,pad_width+30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+    save_image(rotated_img_annotated, pad_width)
+
+    #6. Draw on new face on fulled labelled image
+    cv2.rectangle(rotated_img_annotated, rotated_box[:2], rotated_box[2:], (0, 255, 0), 2)
+    save_image(rotated_img_annotated, pad_width)
+
+    #7. Draw face on tidy image
+    rotated_img_annotated = rotated_img.copy()
+    cv2.rectangle(rotated_img_annotated, rotated_box[:2], rotated_box[2:], (0, 255, 0), 2)
+    save_image(rotated_img_annotated, pad_width)
+
+    #8. Perform Facial obfuscation 
+    x1, y1, x2, y2 = rotated_box
+    width = x2 - x1
+    height = y2 - y1
+    width_border = int(width * border_factor)
+    height_border = int(height * border_factor)
+    rotated_img_obscured = rotated_img_annotated.copy()
+    cv2.rectangle(rotated_img_obscured, [x1+width_border, y1+height_border], [x2-width_border-1, y2-height_border-1], (255, 255, 255), -1)
+    save_image(rotated_img_obscured, pad_width)
+
+    #9. obfuscation image rotated to original orientation
+    unrotated_img_annotated = np.array(Image.fromarray(rotated_img_obscured).rotate(-rotate_angle, center=face_centre, expand=False))
+    save_image(unrotated_img_annotated, pad_width)
+
+
+    #10. Place raw generated face onto image
+    rotated_img_annotated_raw = rotated_img_annotated.copy()
+    start_x, start_y = rotated_box[1]+height_border, rotated_box[0]+width_border
+    rotated_img_annotated_raw[start_x:start_x+inpainted_faces[0].shape[0], start_y:start_y+inpainted_faces[0].shape[1]] = inpainted_faces[0] # naive replacement
+    unrotated_img_annotated_raw = np.array(Image.fromarray(rotated_img_annotated_raw).rotate(-rotate_angle, center=face_centre, expand=False))
+    save_image(unrotated_img_annotated_raw, pad_width)
+
+    #11. Poisson blend and show progress
+    for inpainted_face in inpainted_faces:
+        rotated_img_blended = rotated_img_annotated.copy()
+        rotated_img_blended = poisson_blend(inpainted_face, rotated_img_blended, rotated_box)
+        unrotated_img_blended = np.array(Image.fromarray(rotated_img_blended).rotate(-rotate_angle, center=face_centre, expand=False))
+        save_image(unrotated_img_blended, pad_width)
