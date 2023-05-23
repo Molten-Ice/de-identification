@@ -112,7 +112,7 @@ def train(G, D, fixed_noise, cropped_real_face_tensor, mask, lr = 0.0003, iterat
         scheduler.step()
 
         if i % eval_interval == 0 or i == iterations-1:
-            print(f"Losses, {i} iteration:: Complete:{complete_loss:.4f}, contextual:{contextual_loss:.4f}, perceptual:{lam*perceptual_loss:.4f} (after x0.1), time: {time.time()-t_start:.2f}s")
+            print(f"Losses, {i} iteration:: Complete:{complete_loss:.4f}, contextual:{contextual_loss:.4f}, perceptual:{lam*perceptual_loss:.4f} (after x{lam}), time: {time.time()-t_start:.2f}s")
             progress.append((cropped_real_face_tensor*mask+fake_face*(1-mask)).cpu())
     return progress
 
