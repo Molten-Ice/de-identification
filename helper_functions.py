@@ -175,7 +175,7 @@ def inpaint(G, D, mtcnn, device, cropped_face, fixed_noise, cropped_real_face_te
         inpainted_faces.append(inpainted_face)
     return inpainted_faces
 
-def visualize_progress(original_img_padded, box, landmark, rotate_angle, rotated_img, rotated_box, inpainted_faces):
+def visualize_progress(original_img_padded, box, landmark, face_centre, rotate_angle, rotated_img, rotated_box, pad_width, inpainted_faces, border_factor):
     images_to_save = []
     
     #1. Draw original face box on
